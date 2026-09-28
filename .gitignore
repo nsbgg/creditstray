@@ -1,0 +1,22 @@
+# .NET build output
+**/bin/
+**/obj/
+
+# Local publish output
+/publish/
+/publish-*/
+
+# Visual Studio / Rider / VS Code user files
+*.user
+*.suo
+.vs/
+.idea/
+.vscode/
+
+# Local WebView2 profile and runtime data
+webview2/
+**/WebView2/
+
+# Local logs and temporary files
+*.log
+*.tmp

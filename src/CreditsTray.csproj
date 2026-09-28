@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>CreditsTray</AssemblyName>
+    <RootNamespace>CreditsTray</RootNamespace>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <ApplicationIcon>..\img\creditstray.ico</ApplicationIcon>
+    <Win32Icon>..\img\creditstray.ico</Win32Icon>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2903.40" />
+    <Content Include="..\img\ctb.svg" Link="ctb.svg" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\img\creditstray.ico" Link="creditstray.ico" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

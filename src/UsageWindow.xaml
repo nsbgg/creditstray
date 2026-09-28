@@ -1,0 +1,93 @@
+<Window x:Class="CreditsTray.UsageWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+        Title="Credits Tray" Width="440" SizeToContent="Height"
+        WindowStyle="None" ShowInTaskbar="False" Topmost="True"
+        ResizeMode="NoResize" AllowsTransparency="True"
+        Background="Transparent" ShowActivated="True">
+  <Border x:Name="RootBorder" Background="White" BorderBrush="#D7DCE2" BorderThickness="1"
+          CornerRadius="12" Padding="18">
+    <Grid>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="*" />
+        <RowDefinition Height="Auto" />
+      </Grid.RowDefinitions>
+      <Grid Margin="0,0,0,4">
+        <StackPanel Orientation="Horizontal">
+          <Viewbox Width="28" Height="17" Margin="0,0,8,0" VerticalAlignment="Center">
+            <Canvas Width="66" Height="38">
+              <Path Data="M61.8739,3.5 H46.9241 H9.5 C6.18629,3.5 3.5,6.1863 3.5,9.50001 V28.4842 C3.5,31.7979 6.18629,34.4842 9.5,34.4842 H31.4589 M46.9241,3.5 V34.4842"
+                    Stroke="#0078D7" StrokeThickness="7" StrokeStartLineCap="Square" StrokeEndLineCap="Square" />
+            </Canvas>
+          </Viewbox>
+          <TextBlock x:Name="TitleText" Text="Credits Tray" FontSize="20" FontWeight="SemiBold" />
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+          <TextBlock x:Name="StatusText" Text="LIVE" VerticalAlignment="Center"
+                     FontSize="11" FontWeight="SemiBold" Margin="0,0,10,0" />
+          <Button x:Name="CloseButton" Content="×" Width="28" Height="28"
+                  Background="Transparent" BorderThickness="0" FontSize="18"
+                  Click="ClosePopup_Click">
+            <Button.Template>
+              <ControlTemplate TargetType="Button">
+                <Border Background="Transparent" BorderThickness="0">
+                  <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+              </ControlTemplate>
+            </Button.Template>
+          </Button>
+        </StackPanel>
+      </Grid>
+      <StackPanel x:Name="InfoPanel" Grid.Row="1" Margin="0,16,0,12">
+        <TextBlock x:Name="SummaryText" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,10" />
+        <Grid>
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+          </Grid.RowDefinitions>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="*" />
+          </Grid.ColumnDefinitions>
+          <Border x:Name="FiveHourCard" Margin="0,0,6,6" Padding="12" CornerRadius="8">
+            <StackPanel>
+              <TextBlock x:Name="FiveHourLabel" Text="5-HOUR LIMIT" FontSize="10" FontWeight="SemiBold" />
+              <TextBlock x:Name="FiveHourValueText" Margin="0,5,0,0" FontSize="17" FontWeight="SemiBold" TextWrapping="Wrap" />
+              <Grid Margin="0,9,0,0">
+                <Border x:Name="FiveHourProgressTrack" Height="8" CornerRadius="4" />
+                <Border x:Name="FiveHourProgressFill" Height="8" Width="0" HorizontalAlignment="Left" CornerRadius="4" />
+              </Grid>
+              <TextBlock x:Name="FiveHourResetText" Margin="0,3,0,0" FontSize="11" TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
+          <Border x:Name="WeeklyCard" Grid.Column="1" Margin="6,0,0,6" Padding="12" CornerRadius="8">
+            <StackPanel>
+              <TextBlock x:Name="WeeklyLabel" Text="WEEKLY LIMIT" FontSize="10" FontWeight="SemiBold" />
+              <TextBlock x:Name="WeeklyValueText" Margin="0,5,0,0" FontSize="17" FontWeight="SemiBold" TextWrapping="Wrap" />
+              <Grid Margin="0,9,0,0">
+                <Border x:Name="WeeklyProgressTrack" Height="8" CornerRadius="4" />
+                <Border x:Name="WeeklyProgressFill" Height="8" Width="0" HorizontalAlignment="Left" CornerRadius="4" />
+              </Grid>
+              <TextBlock x:Name="WeeklyResetText" Text="See details for reset time" Margin="0,3,0,0" FontSize="11" TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
+        </Grid>
+        <TextBlock x:Name="UpdatedText" Margin="0,10,0,0" FontSize="11" />
+      </StackPanel>
+      <wv2:WebView2 x:Name="AuthBrowser" Grid.Row="1" Visibility="Collapsed" />
+      <Button x:Name="OpenUsageButton" Grid.Row="2" Content="Connect to ChatGPT" Height="32"
+              Click="Connect_Click">
+        <Button.Template>
+          <ControlTemplate TargetType="Button">
+            <Border CornerRadius="9" Background="{TemplateBinding Background}"
+                    BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+          </ControlTemplate>
+        </Button.Template>
+      </Button>
+    </Grid>
+  </Border>
+</Window>
