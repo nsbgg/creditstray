@@ -43,12 +43,25 @@ public partial class UsageWindow : Window
     private bool _browserReady;
     private bool _refreshInProgress;
     private bool _backgroundRefresh;
+    private int? _lastFiveHourPercent;
+    private DateTimeOffset? _lastUsageSampleAt;
+    private bool _rapidUsageMode;
+    private int _stableRapidFetches;
     private DispatcherTimer? _refreshTimer;
     private const string UsageUrl = "https://chatgpt.com/settings/usage?tab=overview";
+    private static readonly TimeSpan NormalRefreshInterval = TimeSpan.FromMinutes(5);
+    private static readonly TimeSpan RapidRefreshInterval = TimeSpan.FromMinutes(1);
+    private static readonly TimeSpan MinimumRapidSampleInterval = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan MinimumNormalSampleInterval = TimeSpan.FromMinutes(4);
+    private const double RapidDropRateThreshold = 1;
+    private const int RapidDropPercentageThreshold = 5;
+    private const int StableRapidFetchThreshold = 5;
     private MediaBrush _buttonBackground = new(MediaColor.FromRgb(58, 58, 58));
     private MediaBrush _buttonHoverBackground = new(MediaColor.FromRgb(75, 75, 75));
     private MediaBrush _buttonForeground = new(MediaColor.FromRgb(245, 245, 245));
     private MediaBrush _closeButtonForeground = new(MediaColor.FromRgb(245, 245, 245));
+    private MediaBrush _progressAccent = new(MediaColor.FromRgb(0, 120, 215));
+    private MediaBrush _rapidProgressAccent = new(MediaColor.FromRgb(220, 70, 70));
     public event EventHandler<UsageSnapshot>? UsageUpdated;
 
     public UsageWindow(IUsageProvider provider)
@@ -270,6 +283,9 @@ public partial class UsageWindow : Window
                 weeklyIndex >= 0 ? FindFollowingValue(lines, weeklyIndex) : "not detected");
             var weeklyReset = TranslateUsageText(
                 weeklyIndex >= 0 ? FindFollowingReset(lines, weeklyIndex) : "not detected");
+            var fiveHourPercent = FindPercent(fiveHourSummary);
+            var weeklyPercent = FindPercent(weeklySummary);
+            UpdateRefreshInterval(fiveHourSummary, fiveHourPercent, DateTimeOffset.Now);
             var snapshot = new UsageSnapshot(
                 "Usage and credit limits",
                 string.Join(Environment.NewLine,
@@ -285,19 +301,19 @@ public partial class UsageWindow : Window
                 CreditsSummary: creditsIndex >= 0
                     ? TranslateUsageText(FindFollowingValue(lines, creditsIndex))
                     : "not detected",
-                FiveHourPercent: FindPercent(fiveHourSummary),
-                WeeklyPercent: FindPercent(weeklySummary));
+                FiveHourPercent: fiveHourPercent,
+                WeeklyPercent: weeklyPercent,
+                IsRapidRefresh: _rapidUsageMode);
             UpdateSnapshotUi(snapshot);
             UsageUpdated?.Invoke(this, snapshot);
-            if (wasBackgroundRefresh)
-            {
-                return;
-            }
             AuthBrowser.Visibility = Visibility.Collapsed;
             AuthBrowser.Height = double.NaN;
             InfoPanel.Visibility = Visibility.Visible;
-            ShowPopup();
             OpenUsageButton.Content = "Refresh usage";
+            if (!wasBackgroundRefresh)
+            {
+                ShowPopup();
+            }
         }
         catch (Exception ex)
         {
@@ -315,7 +331,7 @@ public partial class UsageWindow : Window
             return;
         }
 
-        _refreshTimer = new DispatcherTimer { Interval = TimeSpan.FromMinutes(5) };
+        _refreshTimer = new DispatcherTimer { Interval = NormalRefreshInterval };
         _refreshTimer.Tick += (_, _) =>
         {
             if (!_refreshInProgress && AuthBrowser.CoreWebView2 is not null)
@@ -326,6 +342,58 @@ public partial class UsageWindow : Window
             }
         };
         _refreshTimer.Start();
+    }
+
+    private void UpdateRefreshInterval(string summary, int currentPercent, DateTimeOffset sampleAt)
+    {
+        var hasPercent = Regex.IsMatch(summary, @"(?<!\d)\d{1,3}\s*%");
+        if (hasPercent && _lastFiveHourPercent.HasValue && _lastUsageSampleAt.HasValue)
+        {
+            var sampleInterval = sampleAt - _lastUsageSampleAt.Value;
+            var percentDrop = _lastFiveHourPercent.Value - currentPercent;
+            if (_rapidUsageMode)
+            {
+                var dropRatePerMinute = sampleInterval.TotalMinutes > 0
+                    ? percentDrop / sampleInterval.TotalMinutes
+                    : double.MaxValue;
+                    if (sampleInterval >= MinimumRapidSampleInterval && dropRatePerMinute < RapidDropRateThreshold)
+                    {
+                        _stableRapidFetches++;
+                        if (_stableRapidFetches >= StableRapidFetchThreshold)
+                        {
+                            _rapidUsageMode = false;
+                            _stableRapidFetches = 0;
+                            SetRefreshInterval(NormalRefreshInterval);
+                            UpdateProgressColor();
+                        }
+                }
+                else
+                {
+                    _stableRapidFetches = 0;
+                }
+            }
+            else if (sampleInterval >= MinimumNormalSampleInterval && percentDrop > RapidDropPercentageThreshold)
+            {
+                _rapidUsageMode = true;
+                _stableRapidFetches = 0;
+                SetRefreshInterval(RapidRefreshInterval);
+                UpdateProgressColor();
+            }
+        }
+
+        if (hasPercent)
+        {
+            _lastFiveHourPercent = currentPercent;
+            _lastUsageSampleAt = sampleAt;
+        }
+    }
+
+    private void SetRefreshInterval(TimeSpan interval)
+    {
+        if (_refreshTimer is not null)
+        {
+            _refreshTimer.Interval = interval;
+        }
     }
 
     private void ShowError(string message)
@@ -355,6 +423,8 @@ public partial class UsageWindow : Window
         var control = useLightTheme ? MediaColor.FromRgb(245, 245, 245) : MediaColor.FromRgb(58, 58, 58);
         var hoverControl = useLightTheme ? MediaColor.FromRgb(232, 236, 241) : MediaColor.FromRgb(68, 68, 68);
         var accent = System.Windows.SystemColors.HighlightColor;
+        _progressAccent = new MediaBrush(accent);
+        _rapidProgressAccent = new MediaBrush(MediaColor.FromRgb(220, 70, 70));
 
         _buttonBackground = new MediaBrush(control);
         _buttonHoverBackground = new MediaBrush(hoverControl);
@@ -379,8 +449,7 @@ public partial class UsageWindow : Window
         StatusText.Foreground = new MediaBrush(accent);
         FiveHourCard.Background = new MediaBrush(control);
         WeeklyCard.Background = new MediaBrush(control);
-        FiveHourProgressFill.Background = new MediaBrush(accent);
-        WeeklyProgressFill.Background = new MediaBrush(accent);
+        UpdateProgressColor();
         FiveHourProgressTrack.Background = new MediaBrush(border);
         WeeklyProgressTrack.Background = new MediaBrush(border);
     }
@@ -394,6 +463,13 @@ public partial class UsageWindow : Window
         WeeklyResetText.Text = snapshot.WeeklyReset;
         UpdateProgressWidths();
         UpdatedText.Text = $"Last updated: {snapshot.UpdatedAt:HH:mm:ss}";
+    }
+
+    private void UpdateProgressColor()
+    {
+        var progressBrush = _rapidUsageMode ? _rapidProgressAccent : _progressAccent;
+        FiveHourProgressFill.Background = progressBrush;
+        WeeklyProgressFill.Background = progressBrush;
     }
 
     private static string FindFollowingValue(string[] lines, int labelIndex)
@@ -438,7 +514,6 @@ public partial class UsageWindow : Window
             .Replace("nicht erkannt", "not detected", StringComparison.OrdinalIgnoreCase)
             .Replace("nicht verbunden", "not connected", StringComparison.OrdinalIgnoreCase)
             .Replace("zurücksetzen", "reset", StringComparison.OrdinalIgnoreCase)
-            .Replace("Zurücksetzen", "Reset", StringComparison.OrdinalIgnoreCase)
             .Replace("Std.", "h", StringComparison.OrdinalIgnoreCase)
             .Replace("Min.", "m", StringComparison.OrdinalIgnoreCase);
         translated = Regex.Replace(translated, @"(?i)\bwird\s+in\s+", "Resets in ");

@@ -13,6 +13,8 @@ A small Windows tray application for Codex usage information.
 - No credential handling and no external browser scraping
 - Optional per-user Windows startup from the tray menu
 - Restores the saved WebView2 session and refreshes usage automatically on startup
+- Uses a 5-minute refresh interval and switches to 1-minute refreshes after a rapid limit drop
+- Returns to 5-minute refreshes after five consecutive stable 1-minute samples
 
 ## Run
 

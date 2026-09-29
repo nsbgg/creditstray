@@ -94,14 +94,14 @@ public sealed class TrayIcon : IDisposable
         var text = $"5h limit: {snapshot.FiveHourSummary}";
         _icon.Text = text.Length <= 63 ? text : text[..60] + "...";
 
-        var nextIcon = CreatePercentageIcon(snapshot.FiveHourSummary);
+        var nextIcon = CreatePercentageIcon(snapshot.FiveHourSummary, snapshot.IsRapidRefresh);
         var previousIcon = _percentageIcon;
         _percentageIcon = nextIcon;
         _icon.Icon = nextIcon;
         previousIcon?.Dispose();
     }
 
-    private static Icon CreatePercentageIcon(string summary)
+    private static Icon CreatePercentageIcon(string summary, bool isRapidRefresh)
     {
         var match = Regex.Match(summary, @"(?<!\d)(\d{1,3})\s*%");
         var text = match.Success ? match.Groups[1].Value : "—";
@@ -125,7 +125,9 @@ public sealed class TrayIcon : IDisposable
         const int barWidth = 26;
         const int barHeight = 5;
         using var trackBrush = new SolidBrush(Color.FromArgb(120, 120, 120));
-        using var fillBrush = new SolidBrush(Color.FromArgb(0, 120, 215));
+        using var fillBrush = new SolidBrush(isRapidRefresh
+            ? Color.FromArgb(220, 70, 70)
+            : Color.FromArgb(0, 120, 215));
         graphics.FillRectangle(trackBrush, barX, barY, barWidth, barHeight);
         graphics.FillRectangle(fillBrush, barX, barY, (int)Math.Round(barWidth * percent / 100d), barHeight);
 

@@ -11,7 +11,8 @@ public sealed record UsageSnapshot(
     string WeeklyReset = "See details for reset time",
     string CreditsSummary = "not detected",
     int FiveHourPercent = 0,
-    int WeeklyPercent = 0);
+    int WeeklyPercent = 0,
+    bool IsRapidRefresh = false);
 
 public interface IUsageProvider
 {
