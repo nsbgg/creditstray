@@ -35,6 +35,7 @@ public sealed class TrayIcon : IDisposable
             }
         };
         UpdateStatus();
+        _ = RestoreUsageAsync();
     }
 
     private Forms.ContextMenuStrip CreateMenu()
@@ -79,6 +80,12 @@ public sealed class TrayIcon : IDisposable
         var window = new UsageWindow(_provider);
         window.UsageUpdated += (_, snapshot) => UpdateTrayUsage(snapshot);
         return window;
+    }
+
+    private async Task RestoreUsageAsync()
+    {
+        _usageWindow ??= CreateUsageWindow();
+        await _usageWindow.RestoreSessionAsync();
     }
 
     private void UpdateTrayUsage(UsageSnapshot snapshot)

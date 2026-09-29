@@ -105,6 +105,33 @@ public partial class UsageWindow : Window
 
     private void ClosePopup_Click(object sender, RoutedEventArgs e) => Hide();
 
+    public async Task RestoreSessionAsync()
+    {
+        try
+        {
+            if (!IsVisible)
+            {
+                Opacity = 0;
+                ShowActivated = false;
+                Show();
+                Hide();
+                Opacity = 1;
+            }
+
+            AuthBrowser.Visibility = Visibility.Visible;
+            InfoPanel.Visibility = Visibility.Collapsed;
+            await EnsureBrowserReadyAsync();
+            _refreshInProgress = true;
+            _backgroundRefresh = true;
+            AuthBrowser.CoreWebView2.Navigate(UsageUrl);
+        }
+        catch
+        {
+            _refreshInProgress = false;
+            _backgroundRefresh = false;
+        }
+    }
+
     private async void Connect_Click(object sender, RoutedEventArgs e)
     {
         try
@@ -116,21 +143,7 @@ public partial class UsageWindow : Window
             AuthBrowser.Height = 560;
             ShowPopup();
 
-            if (!_browserReady)
-            {
-                var userDataFolder = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                    "CreditsTray", "WebView2");
-                Directory.CreateDirectory(userDataFolder);
-                var environment = await CoreWebView2Environment.CreateAsync(null, userDataFolder);
-                await AuthBrowser.EnsureCoreWebView2Async(environment);
-                AuthBrowser.CoreWebView2.Settings.AreDevToolsEnabled = false;
-                AuthBrowser.CoreWebView2.Settings.IsStatusBarEnabled = false;
-                AuthBrowser.CoreWebView2.NavigationCompleted += Browser_NavigationCompleted;
-                _browserReady = true;
-                StartRefreshTimer();
-            }
-
+            await EnsureBrowserReadyAsync();
             AuthBrowser.CoreWebView2.Navigate(UsageUrl);
         }
         catch (Exception ex)
@@ -141,6 +154,26 @@ public partial class UsageWindow : Window
         {
             OpenUsageButton.IsEnabled = true;
         }
+    }
+
+    private async Task EnsureBrowserReadyAsync()
+    {
+        if (_browserReady)
+        {
+            return;
+        }
+
+        var userDataFolder = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "CreditsTray", "WebView2");
+        Directory.CreateDirectory(userDataFolder);
+        var environment = await CoreWebView2Environment.CreateAsync(null, userDataFolder);
+        await AuthBrowser.EnsureCoreWebView2Async(environment);
+        AuthBrowser.CoreWebView2.Settings.AreDevToolsEnabled = false;
+        AuthBrowser.CoreWebView2.Settings.IsStatusBarEnabled = false;
+        AuthBrowser.CoreWebView2.NavigationCompleted += Browser_NavigationCompleted;
+        _browserReady = true;
+        StartRefreshTimer();
     }
 
     private async void Browser_NavigationCompleted(object? sender, CoreWebView2NavigationCompletedEventArgs e)

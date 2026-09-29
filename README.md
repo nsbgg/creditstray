@@ -12,6 +12,7 @@ A small Windows tray application for Codex usage information.
 - Provider abstraction for a future authorized API integration
 - No credential handling and no external browser scraping
 - Optional per-user Windows startup from the tray menu
+- Restores the saved WebView2 session and refreshes usage automatically on startup
 
 ## Run
 
